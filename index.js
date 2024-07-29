@@ -1,7 +1,7 @@
 let result = document.querySelector(".display");
 let buttons = document.querySelectorAll(".buttons button");
 let sound = document.getElementById("clicksound");
-let holdThreshold = 400;
+let holdThreshold = 1000;
 let clearTimer;
 let lastChar;
 let stack = [];
@@ -21,7 +21,8 @@ function calculateResult() {
       evalResult = evalResult.toExponential(2);
       updateDisplay(evalResult.toString());
     } else {
-      updateDisplay(parseFloat(evalResult.toFixed(2)).toString());    }
+      updateDisplay(parseFloat(evalResult.toFixed(2)).toString());
+    }
   } catch (error) {
     updateDisplay("Error");
   }
@@ -32,9 +33,11 @@ buttons.forEach((button) => {
     let currentDisplay = result.textContent;
 
     if (this.value === "C") {
-      stack.length = 0;
+      lastChar === ")" ? stack.push(lastChar) : null;
       updateDisplay(currentDisplay.slice(0, -1) || "0");
+
       clearTimer = setTimeout(() => {
+        stack.length = 0;
         updateDisplay("0");
       }, holdThreshold);
     } else if (this.value === "=") {
@@ -48,21 +51,25 @@ buttons.forEach((button) => {
         }
       }
     } else if (this.value === "(") {
-      if (operators.includes(lastChar)) {
+      if (operators.includes(lastChar) || lastChar === "(") {
         stack.push(this.value);
-        updateDisplay(currentDisplay === "0" ? this.value : currentDisplay + this.value);
+        updateDisplay(
+          currentDisplay === "0" ? this.value : currentDisplay + this.value
+        );
       }
     } else if (this.value === ")") {
-      if (stack.length > 0 && !operators.includes(lastChar) && lastChar !== "(") {
+      if (
+        stack.length > 0 &&
+        !operators.includes(lastChar) &&
+        lastChar !== "("
+      ) {
         stack.pop();
         updateDisplay(currentDisplay + this.value);
       }
     } else {
       if (lastChar !== ")") {
         updateDisplay(
-          currentDisplay === "0"
-            ? this.value
-            : currentDisplay + this.value
+          currentDisplay === "0" ? this.value : currentDisplay + this.value
         );
       }
     }
