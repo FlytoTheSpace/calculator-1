@@ -1,87 +1,55 @@
-let result = document.querySelector(".display");
-let buttons = document.querySelectorAll(".buttons button");
-let sound = document.getElementById("clicksound");
-let holdThreshold = 1000;
-let clearTimer;
-let lastChar;
-let stack = [];
-let operators = ["+", "-", "*", "/"];
+const result = document.querySelector(".display");
+const buttons = document.querySelectorAll(".buttonsContainer button");
+const sound = document.getElementById("clicksound");
+const operators = ['+', '-', '×', '/', '^', '%']
 
 function updateDisplay(value) {
-  result.textContent = value;
-  result.scrollLeft = result.scrollWidth;
+    result.textContent = value;
+    result.scrollLeft = result.scrollWidth;
+    if(result.textContent.length === 0){
+        updateDisplay(0);
+    }
 }
 
+const removeErrors = (string)=>string.replace(/[^1-9+\-*/](0+)(?=[1-9])/g, '').replace(/(^0+)/g, '').replace("Error", '')
+
 function calculateResult() {
-  try {
-    let evalResult = eval(result.textContent);
-    if (!isFinite(evalResult)) {
-      updateDisplay("Error: Division by zero");
-    } else if (evalResult.toString().length >= 7) {
-      evalResult = evalResult.toExponential(2);
-      updateDisplay(evalResult.toString());
-    } else {
-      updateDisplay(parseFloat(evalResult.toFixed(2)).toString());
+    try {
+        const input = result.textContent.replace('π', `${Math.PI}`).replace(/\^/g, '**').replace(/\×/g, '*').replace(/(?<=\d)[ ]*\(/, '*(')
+        let evalResult = eval(input);
+        if (evalResult.toString().length >= 7) {
+            evalResult = evalResult.toExponential(2);
+            return updateDisplay(evalResult.toString());
+        }
+
+        return updateDisplay(parseFloat(evalResult.toFixed(2)).toString());
+    } catch (error) {
+        console.log(error)
+        updateDisplay("Error");
     }
-  } catch (error) {
-    updateDisplay("Error");
-  }
 }
 
 buttons.forEach((button) => {
-  button.addEventListener("mousedown", function () {
-    let currentDisplay = result.textContent;
-
-    if (this.value === "C") {
-      lastChar === ")" ? stack.push(lastChar) : null;
-      updateDisplay(currentDisplay.slice(0, -1) || "0");
-
-      clearTimer = setTimeout(() => {
-        stack.length = 0;
-        updateDisplay("0");
-      }, holdThreshold);
-    } else if (this.value === "=") {
-      calculateResult();
-    } else if (this.classList.contains("operator")) {
-      if (lastChar !== "(" && !operators.includes(lastChar)) {
-        if (operators.includes(lastChar)) {
-          updateDisplay(currentDisplay.slice(0, -1) + this.value);
-        } else {
-          updateDisplay(currentDisplay + this.value);
+    button.addEventListener("mousedown", function () {
+        sound.play();
+        const currentDisplay = result.textContent;
+        const value = this.value
+        if (value === "=") { return calculateResult() }
+        if (value === "C") { return updateDisplay("0") }
+        if (value === "backspace") {
+            return updateDisplay(result.textContent.slice(0, result.textContent.length-1))
         }
-      }
-    } else if (this.value === "(") {
-      if (operators.includes(lastChar) || lastChar === "(") {
-        stack.push(this.value);
-        updateDisplay(
-          currentDisplay === "0" ? this.value : currentDisplay + this.value
-        );
-      }
-    } else if (this.value === ")") {
-      if (
-        stack.length > 0 &&
-        !operators.includes(lastChar) &&
-        lastChar !== "("
-      ) {
-        stack.pop();
-        updateDisplay(currentDisplay + this.value);
-      }
-    } else {
-      if (lastChar !== ")") {
-        updateDisplay(
-          currentDisplay === "0" ? this.value : currentDisplay + this.value
-        );
-      }
-    }
-    lastChar = result.textContent.slice(-1);
-    sound.play();
-  });
-});
 
-document.addEventListener("mouseup", () => {
-  clearTimeout(clearTimer);
-});
-
-document.addEventListener("mouseleave", () => {
-  clearTimeout(clearTimer);
+        if (!this.classList.contains(('operator'))){
+            result.textContent += value
+            console.log(value)
+            result.textContent = removeErrors(result.textContent)
+            return null;
+        }
+        if (operators.includes(value) && (result.textContent.length && result.textContent[0] !== 0)){
+            result.textContent += value
+            result.textContent = removeErrors(result.textContent)
+            return null;
+        }
+    });
 });
